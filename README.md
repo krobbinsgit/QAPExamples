@@ -1,13 +1,6 @@
-**Interested in contributing a code example?** 
+![D-Wave Logo](dwave_logo.png)
 
-Please take a look at our [contribution guidelines](CONTRIBUTING.md) before
-getting started. Thanks!
-
-<!-- Before submitting your code, please delete the above code contribution
-instructions and this comment as they will not be relevant in your code 
-example README.md.-->
-
-# <demo_name>
+# Quadratic Assignment Problems
 
 Describe your example and specify what it is demonstrating. Consider the
 following questions:
@@ -21,7 +14,32 @@ A clear description allows us to properly categorize your example.
 Images are encouraged. If your example produces a visualization, consider
 displaying it here.
 
-![D-Wave Logo](dwave_logo.png)
+Quadratic Assignment Problems, or QAP, make up a well-known class of combinatorial optimization problems which have been described as the "hardest of the hard" [Sahni and Gonzalez 1976 FIX]. They have been applied to factory and hosptial layouts as well as electronic chip design FIX CITE ALL.
+
+## Problem Statement
+Consider a manufacturing center which needs to have $n$ facilities inside of it. Each facility must be placed in one of $n$ locations. Further, each facility has some material flow between itself and other facilities. Each location must hold one facility and vice-versa. How do we place the facilities to minimize the overall flow and distance between facilities? 
+
+QAP problems are described by zero-diagonal $n\times n$ matrices $A,B$ which represent flow and distance respectively. $A_{jk}$ represents the material flow between facilities $j,k$ while $B_{mn}$ represents the distance between locations $m,n$. The problem will also require $n^2$ binary variables $x_{jk}$ which equal $1$ if facility $j$ is in location $k$ and $0$ otherwise.
+
+The objective is to minimize the flow times distance. Thus the *objective function* $C$ is given by
+$$
+C=\sum_{jkmn=1}^n f_{jk}d_{mn}x_{jm}x_{kn}.
+$$
+
+We also must add constraints that restrict solutions to having only one location per facility and vice-versa. We can write these as
+
+$$
+\sum_{k=1}^n x_{jk} = 1\text{ } \text{     for all facilities }j
+$$
+
+and
+
+$$
+\sum_{j=1}^n x_{jk} = 1\text{ } \text{     for all locations }k.
+$$
+
+At first glance there appear to be $2^{n^2}$ potential solutions to a QAP problem. However, when writing the variables $x_{jk}$ as an $n \times n$ matrix, constraints force any feasible solution to have the form of a permutation matrix. Thus there are only $n!$ feasible solutions.
+
 
 ## Usage
 

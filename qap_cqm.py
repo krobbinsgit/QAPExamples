@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# Written by Ken Robbins & Daniel Mahler with legacy code from John McFarland
 
 from dimod import BinaryQuadraticModel, ConstrainedQuadraticModel, Binary, BINARY, Integer, quicksum
 from dwave.system import LeapHybridCQMSampler
@@ -22,14 +23,14 @@ from itertools import product
 import itertools as it
 import cytoolz as tl
 
+from os.path import dirname, join
+import click
 
-import time
-
-def relative_error_percent(observed,expected):
+def relative_error_percent(observed:(int or float), expected:(int or float)):
     """Calculates relative error of observed to expected data up to 2 decimal places"""
     return(abs(np.round(100*(observed-expected)/expected,2)))
 
-def read_problem_dat(path):
+def read_problem_dat(path:str):
     """
     Reads the .dat files from QAPLIB and converts them to numpy arrays that describe the problem.
     A and B are (n x n)-dimensional matrices that represent either 'flow' or 'distance' in a QAP problem
@@ -57,8 +58,8 @@ def read_problem_dat(path):
 
     return A, B
 
-def read_solution(file_name):
-    with open(file_name) as solution_file:
+def read_solution(filename:str):
+    with open(filename) as solution_file:
         solution_value = int(solution_file.readline().split(' ')[-1][:-1])
     return(solution_value)
 
@@ -117,7 +118,7 @@ def add_discrete(cqm, vars, label):
     lbl = add_1_hot(cqm, vars, label)
     cqm.constraints[lbl].lhs.mark_discrete()
 
-def build_cqm(A, B, swap='auto',pre_solve=True): # Ripped from John McFarland's stuff. Takes in flow and distance matrices and outputs a cqm object
+def build_cqm(A, B, swap='auto',pre_solve:bool = True):
     """
 
     Inputs:
@@ -152,25 +153,33 @@ def build_cqm(A, B, swap='auto',pre_solve=True): # Ripped from John McFarland's 
         reduced_cqm = cqm
     return reduced_cqm
 
-def round_decimals_up(number:float, decimals:int=2): # ripped from kodify.net
+def round_decimals_up(number:float, decimals:int = 2):
     """
     Returns a value rounded up to a specific number of decimal places.
+    Derived from kodify.net to save time
     """
-    if not isinstance(decimals, int):
-        raise TypeError("decimal places must be an integer")
-    elif decimals < 0:
-        raise ValueError("decimal places has to be 0 or more")
-    elif decimals == 0:
+    if decimals == 0:
         return np.ceil(number)
-
     factor = 10 ** decimals
     return np.ceil(number * factor) / factor
 
-def qap_solver(file_name,pre_solve=True):
+# Command line functionality
+DEFAULT_PATH = join(dirname(__file__), 'QAPLIB_data', 'tai12a.dat')
+
+
+@click.command(help='Solve a QAP problem using '
+                    'LeapHybridCQMSampler.')
+@click.option('--filename', type=click.Path(), default = 'tai12a',
+              help=f'Path to problem file.  Default is tai12a')
+@click.option('--verbose/--no-verbose', default = True,
+              help='Prints information during and after the solve. Use no-verbose to turn it off')
+
+def main(filename:str, verbose = True, pre_solve = True):
     """
-    Solves the 
+    Solves the Quadratic Assignment Problem with the designation filename, then prints results and compares to QAPLIB
     Inputs:
-        file_name (str): the name of the QAP problem to read and solve, e.g. tai12a
+        filename (str): the name of the QAP problem to read and solve, e.g. tai12a
+        verbose (Boolean = True): set to False to turn off printed status updates mid-solve
         pre_solve (Boolean = True): set to False to turn D-Wave's presolve methods off
     Outputs:
         (solution_value,best_value,best.sample) (tuple):
@@ -180,36 +189,45 @@ def qap_solver(file_name,pre_solve=True):
                 keys are variable names
                 values are 0.0 or 1.0
     """
-    print('Beginning to read files.\n')
-    A,B = read_problem_dat(f'QAPLIB_data/{file_name}.dat') # distance and flow matrices
+    if verbose:
+        print(f'\nBeginning to read {filename} files.\n')
+    A,B = read_problem_dat(f'QAPLIB_data/{filename}.dat') # distance and flow matrices
     size = len(A)
-    solution_value = read_solution(f'QAPLIB_solutions/{file_name}.sln')
+    solution_value = read_solution(f'QAPLIB_solutions/{filename}.sln')
     
-    print('Making the CQM object.\n')
+    if verbose:
+        print('Making the CQM object.\n')
     cqm = build_cqm(A,B,pre_solve=pre_solve)
     sampler=LeapHybridCQMSampler()
     min_time = sampler.min_time_limit(cqm)
     if min_time >= 5:
         new_time_spent = round_decimals_up(min_time,1)
-        print(f'Adjusting runtime to minimum required: {new_time_spent}s\n')
+        if verbose:
+            print(f'Adjusting runtime to minimum required: {new_time_spent}s\n')
     else:
         new_time_spent = 5
 
-    print('Beginning to sample\n')
+    if verbose:
+        print('Beginning to sample\n')
     sample_set = sampler.sample_cqm(cqm, time_limit = new_time_spent)
 
-    print('Finished sampling. Beginning to filter for feasibility\n')
+    if verbose:
+        print('Finished sampling. Beginning to filter for feasibility\n')
     feasible_samples = sample_set.filter(lambda d: d.is_feasible)
-    print('Finished filtering\n')
+    if verbose:
+        print('Finished filtering\n')
     if len(feasible_samples)>0:
         best = feasible_samples.lowest().first
         best_value = best.energy
-        print(f'Feasible solution found!\n\nThe energy calculated in {new_time_spent}s is {best_value}\n')
-        if best_value == solution_value:
+        if best_value == int(best_value):
+            best_value = int(best_value)
+        if verbose:
+            print(f'Feasible solution found!\n\nThe energy calculated in {new_time_spent}s is {best_value}\n')
+        if (best_value == solution_value) and verbose:
             print('This is the same value as the best-known solution according to QAPLIB.\n')
-        elif best_value >= solution_value:
+        elif (best_value > solution_value) and verbose:
             print(f'This is a {relative_error_percent(best_value,solution_value)}% worse solution than the best known on QAPLIB: {solution_value}\n')
-        else:
+        elif (best_value < solution_value) and verbose:
             print(f'This is a {relative_error_percent(best_value,solution_value)}% better solution than the best known on QAPLIB: {solution_value}\n')
         return((solution_value,best_value,best.sample))
     else:
@@ -217,6 +235,5 @@ def qap_solver(file_name,pre_solve=True):
     
 
 
-
-qap_solver('tai20a')
-    
+if __name__ == "__main__":
+    main()
