@@ -1,1 +1,4 @@
-dwave-ocean-sdk>=3.0.0
+dwave-ocean-sdk >= 6.4.0
+numpy >= 1.24.2
+cytoolz >= 0.12.1
+click >= 8.1.3
