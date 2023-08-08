@@ -243,5 +243,9 @@ def round_decimals_up(number:float, decimals:int = 2):
     return np.ceil(number * factor) / factor
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
+
+A,B = read_problem_dat('QAPLIB_data/tai5a.dat')
+cqm = build_cqm(A,B,pre_solve=False)
+print(cqm.variables)
