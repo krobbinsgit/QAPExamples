@@ -155,7 +155,7 @@ def build_cqm(A, B, swap='auto',pre_solve:bool = True):
     return reduced_cqm
 
 # Command line functionality
-DEFAULT_PATH = join(dirname(__file__), 'QAPLIB_data', 'tai12a.dat')
+DEFAULT_PATH = join(dirname(__file__), 'QAPLIB_problems', 'tai12a.dat')
 
 
 @click.command(help='Solve a QAP using '
@@ -184,7 +184,7 @@ def main(filename:str, verbose = True, pre_solve = True):
     """
     if verbose:
         print(f'\nBeginning to read files for {filename}\n')
-    A,B = read_problem_dat(f'QAPLIB_data/{filename}.dat') # distance and flow matrices
+    A,B = read_problem_dat(f'QAPLIB_problems/{filename}.dat') # distance and flow matrices
     size = len(A)
     solution_value = read_solution(f'QAPLIB_solutions/{filename}.sln')
     
@@ -243,9 +243,5 @@ def round_decimals_up(number:float, decimals:int = 2):
     return np.ceil(number * factor) / factor
 
 
-# if __name__ == "__main__":
-#     main()
-
-A,B = read_problem_dat('QAPLIB_data/tai5a.dat')
-cqm = build_cqm(A,B,pre_solve=False)
-print(cqm.variables)
+if __name__ == "__main__":
+    main()
