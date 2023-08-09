@@ -38,9 +38,12 @@ class TestSmoke(unittest.TestCase):
 class Testcqm_qap(unittest.TestCase):
     """
     Reads tai5a.dat and compares A,B matrices to previous results
-    Then reads tai5a.sln and compares the value it read to a known solution value
+    Then reads tai5a.sln and compares the value it read to the known optimal value
+        Note: tai5a is one of the few in QAPLIB_problems that has a known optimal solution.
     Then creates CQM objects with and without pre_solve and checks variables
     Then solves the presolve-enabled CQM object and ensures answer is within 10% of known optimal solution
+    This is all one big test because creating the CQM object is expensive
+
     """
     def test_read_dat_file(self):
         A_true = np.array([[ 0,  6, 44, 40, 75], 
@@ -53,7 +56,7 @@ class Testcqm_qap(unittest.TestCase):
                            [95, 41,  0, 10,  4], 
                            [82,  6, 10,  0, 63], 
                            [56, 25,  4, 63,  0]])
-        A,B = qap_cqm.read_problem_dat('QAPLIB_data/tai5a.dat')
+        A,B = qap_cqm.read_problem_dat('QAPLIB_problems/tai5a.dat')
         no_presolve_variables = ['x0_0', 'x0_1', 'x0_2', 'x0_3', 'x0_4', 
                                  'x1_0', 'x1_1', 'x1_2', 'x1_3', 'x1_4', 
                                  'x2_0', 'x2_1', 'x2_2', 'x2_3', 'x2_4', 
@@ -71,5 +74,5 @@ class Testcqm_qap(unittest.TestCase):
         self.assertEqual(qap_cqm.read_solution('QAPLIB_solutions/tai5a.sln'),12902)
         self.assertEqual(cqm_presolve.variables, presolve_variables)
         self.assertEqual(cqm_no_presolve.variables, no_presolve_variables)
-        self.assertGreaterEqual(best_energy, 12902) # best_energy >= known optimal solution
-        self.assertLessEqual(best_energy,14193) # best_energy <= 1.1*(known optimal solution)
+        self.assertGreaterEqual(best_energy, 12902) # best_energy >= known optimal solution for tai5a
+        self.assertLessEqual(best_energy,14193) # best_energy <= 1.1*(known optimal solution for tai5a)
