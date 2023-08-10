@@ -210,21 +210,19 @@ def main(filename:str, verbose = True, pre_solve = True):
     if verbose:
         print('Finished sampling. Beginning to filter for feasibility\n')
     feasible_samples = sample_set.filter(lambda d: d.is_feasible)
-    if verbose:
-        print('Finished filtering\n')
     if len(feasible_samples)>0:
         best = feasible_samples.lowest().first
         best_value = best.energy
         if best_value == int(best_value):
             best_value = int(best_value)
         if verbose:
-            print(f'Feasible solution found!\n\nThe energy calculated in {new_time_spent}s is {best_value}\n')
+            print(f'Feasible solution found!\n\nThe energy calculated is {best_value}\n')
         if (best_value == solution_value) and verbose:
             print('This is the same value as the best-known solution according to QAPLIB.\n')
         elif (best_value > solution_value) and verbose:
-            print(f'This is a {relative_error_percent(best_value,solution_value)}% worse solution than the best known on QAPLIB: {solution_value}\n')
+            print(f'This is a {relative_error_percent(best_value,solution_value)}% worse value than the best-known solution on QAPLIB: {solution_value}\n')
         elif (best_value < solution_value) and verbose:
-            print(f'This is a {relative_error_percent(best_value,solution_value)}% better solution than the best known on QAPLIB: {solution_value}\n')
+            print(f'This is a {relative_error_percent(best_value,solution_value)}% better value than the best-known solution on QAPLIB: {solution_value}\n')
         return((solution_value,best_value,best.sample))
     else:
         print(f'No feasible solution found after {new_time_spent}s')

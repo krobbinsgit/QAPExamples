@@ -36,16 +36,16 @@ class TestSmoke(unittest.TestCase):
         subprocess.check_output([sys.executable, demo_file])
 
 class Testcqm_qap(unittest.TestCase):
-    """
-    Reads tai5a.dat and compares A,B matrices to previous results
-    Then reads tai5a.sln and compares the value it read to the known optimal value
-        Note: tai5a is one of the few in QAPLIB_problems that has a known optimal solution.
-    Then creates CQM objects with and without pre_solve and checks variables
-    Then solves the presolve-enabled CQM object and ensures answer is within 10% of known optimal solution
-    This is all one big test because creating the CQM object is expensive
-
-    """
-    def test_read_dat_file(self):
+    def test_reasonable_result(self):
+        """
+        Reads tai5a.dat and compares A,B matrices to previous results
+        Then reads tai5a.sln and compares the value it read to the known optimal value
+            Note: tai5a is one of the few in QAPLIB_problems that has a known optimal solution.
+        Then creates CQM objects with and without pre_solve and checks variables
+        Then solves the presolve-enabled CQM object and ensures answer is within 10% of known optimal solution
+        This is all one big test because creating the CQM object is expensive
+        """
+        
         A_true = np.array([[ 0,  6, 44, 40, 75], 
                            [ 6,  0, 79,  0, 89], 
                            [44, 79,  0, 35,  9], 
