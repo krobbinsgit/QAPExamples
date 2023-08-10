@@ -74,12 +74,6 @@ def set_qap_objective(cqm, A, B):
 
     cqm.add_variables(BINARY, tl.concat(x))
 
-    for i, row in  enumerate(x):
-        add_discrete(cqm, row, f'discrete_row_{i}')
-
-    for j in range(n):
-        add_1_hot(cqm, (row[j] for row in x), f'one_hot_col_{j}')
-
     cqm.set_objective(
         (x0, x1, a * b)
         for (i0, x_i0), (i1, x_i1) in it.product(enumerate(x), repeat=2)
@@ -133,11 +127,13 @@ def build_cqm(A, B, swap='auto',pre_solve:bool = True):
     Outputs:
         reduced_cqm (dimod.ConstrainedQuadraticModel): a simplified CQM object representing the QAP described by A, B
     """
+
+    
     n = len(A)
-    if swap == 'auto':
-        swap = (n == 256)
+    if swap == 'auto': # The below clause forces swapping A <-> B for tai256c, the largest problem in QAPLIB
+        swap = (n == 256) # tai256c is a special case with special structure in the A, B matrices
     if swap:
-        tmp = A
+        tmp = A 
         A = B
         B = tmp
         del tmp
@@ -145,6 +141,13 @@ def build_cqm(A, B, swap='auto',pre_solve:bool = True):
     cqm = ConstrainedQuadraticModel() # Builds an empty CQM object
     set_qap_objective(cqm, A, B) # A, B were reversed for some reason. Shouldn't matter
 
+    n = len(A)
+    x = [[f'x{i}_{j}' for j in range(n)] for i in range(n)]
+
+    for i, row in enumerate(x):
+        add_discrete(cqm, row, f'discrete_row_{i}')
+    for j in range(n):
+        add_1_hot(cqm, (row[j] for row in x), f'one_hot_col_{j}')
     if pre_solve==True:
         presolve = Presolver(cqm)
         presolve.load_default_presolvers()
@@ -228,14 +231,14 @@ def main(filename:str, verbose = True, pre_solve = True):
     
 
 def relative_error_percent(observed:(int or float), expected:(int or float)):
-    """Calculates relative error of observed to expected data up to 2 decimal places"""
+    """ Calculates relative error of observed to expected data to 2 decimal places """
     return(abs(np.round(100*(observed-expected)/expected,2)))
 
 
 def round_decimals_up(number:float, decimals:int = 2):
     """
-    Returns a value rounded up to a specific number of decimal places.
-    Derived from kodify.net to save time
+    Returns a value rounded UP to a specific number of decimal places.
+    Derived from kodify.net
     """
     if decimals == 0:
         return np.ceil(number)

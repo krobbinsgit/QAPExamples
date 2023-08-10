@@ -1,8 +1,8 @@
 ![D-Wave Logo](images/dwave_logo.png)
 # Quadratic Assignment Problems
-Quadratic Assignment Problems, or QAPs, make up a well-known class of NP-hard combinatorial optimization problems which have been described as the "hardest of the hard" [1,2]. They have been applied to factory and hosptial layouts as well as electronic chip design, scheduling, quantum physics and more [1-3]. This example uses D-Wave's Constrained Quadratic Model (CQM) sampler to find solutions for these difficult problems.
+Quadratic Assignment Problems, or QAPs, make up a well-known class of NP-hard combinatorial optimization problems which have been described as the "hardest of the hard" [1,2]. They have been applied to factory and hosptial layouts as well as electronic chip design, scheduling, quantum physics and more [1-3]. This example uses D-Wave's Constrained Quadratic Model (CQM) sampler to find solutions for these difficult problems. Due to the extreme difficulty of these problems, even the best-known solutions for many famous QAP are just upper bounds and are not known to be optimal.
 
-Some of the problems on QAPLIB have been solved to optimality, e.g. `tai12a`, `had20` and `rou20` [4]. However, due to the difficulty of QAP in general, many of the best-known solutions on QAPLIB are upper bounds.
+Some of the problems on QAPLIB have been solved to optimality, . However, due to the difficulty of QAP in general, many of the best-known solutions on QAPLIB are upper bounds [4]
 
 ## Quadratic Assignment Problem Statement
 Consider a manufacturing center which needs to have $n$ facilities inside of it. Each facility must be placed in one of $n$ locations. Further, each facility has some material flow between itself and other facilities. Each location must hold one facility and vice-versa. How do we place the facilities to minimize the overall flow and distance between facilities? The goal is to make the system more efficient [1,2].
@@ -12,8 +12,9 @@ Consider a manufacturing center which needs to have $n$ facilities inside of it.
 QAPs are described by zero-diagonal $n\times n$ matrices $A,B$ which represent flow and distance respectively. $A_{jk}$ represents the material flow between facilities $j,k$ while $B_{st}$ represents the distance between locations $s,t$. The problem will also require $n^2$ binary variables $x_{jk}$ which equal $1$ if facility $j$ is in location $k$ and $0$ otherwise [1-3]. Because there are $n^2$ variables, the number of quadratic coefficients in the objective function scales as $O(n^4)$.
 
 The objective is to minimize the flow times distance. Thus the *objective function* $C$ is given by
+
 $$
-C=\sum_{j,k,\ell,m=1}^n f_{jk}d_{\ell m}x_{j\ell}x_{km}.
+C=\sum_{j,k,l,m=1}^n f_{jk}d_{lm}x_{jl}x_{km}.
 $$
 
 We also must add constraints that restrict solutions to having only one location per facility and vice-versa. We can write these as
@@ -45,12 +46,19 @@ Using the option `--not_verbose` will prevent the code from printing status upda
 
 Using the option `--pre_solve False` will turn off D-Wave's Presolve methods which make the problem more amenable to the CQM hybrid sampler.
 
+As an example, if you want to run problem `tho30` without applying D-Wave's Presolve methods or printing statements, you would enter the following into the command line:
+
+```bash
+python qap_cqm.py --filename tho30 --not_verbose --pre_solve False
+```
+
 ## Code Overview
 This code constructs a CQM object out of a previously-established QAP benchmark from QAPLIB. It then solves the problem and compares the results to the best known solution.
 
 ### Main Functions
 * `read_problem_dat()` reads the QAPLIB problem file stored in a `.dat` format and converts it to matrices $A,B$
 * `read_solution()` reads the QAPLIB problem solution file stored in a `.sln` format and extracts the best-known value for the QAP's objective function
+    * The best-known solution is not necessarily optimal, though for some cases it is (e.g. `tai12a`, `had20` and `rou20` [4])
 * `set_qap_objective()` converts matrices $A,B$ into the objective function for the QAP and writes it into a CQM object
 * `add_1_hot()` writes one of the constraints into the CQM object.
 * `add_discrete()` calls `add_1_hot()` and forces the CQM object to recognize it as a one-hot (i.e "discrete") constraint
@@ -91,6 +99,7 @@ In general our hybrid offerings tend to give good results in reasonable time ins
 3. M. Dall'Arno, F. Buscemi & T. Koshiba, "Computing the Quantum Guesswork, a Quadratic Assignment Problem," 2023, [Nagoya University](https://www.rintonpress.com/xxqic23/qic-23-910/0721-0732.pdf)
 4. Computational Optimization Research at Lehigh (COR@L), [QAPLIB](https://coral.ise.lehigh.edu/data-sets/qaplib/qaplib-problem-instances-and-solutions/)
 5. John C. Villanueva, "How Many Atoms Are There in the Universe?" 2009, [Universe Today](https://www.universetoday.com/36302/atoms-in-the-universe/amp/)
+
 
 
 ## License
