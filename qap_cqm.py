@@ -34,7 +34,8 @@ def read_problem_dat(path:str):
         A (numpy array): the flow or distance matrix for the QAP described in the .dat file
         A (numpy array): the distance or flow matrix for the QAP described in the .dat file
     """
-    def read_matrix(lines): 
+    def read_matrix(lines):
+        """ Reads a matrix printed in the .dat file and returns it as a numpy array """ 
         data = []
         for line in lines:
             data.append([int(x) for x in line.split()])
@@ -157,38 +158,65 @@ def build_cqm(A, B, swap='auto',pre_solve:bool = True):
         reduced_cqm = cqm
     return reduced_cqm
 
+    
+def relative_error_percent(observed:(int or float), expected:(int or float)):
+    """
+    Calculates the relative error of observed vs. expected data to 2 decimal places
+    Returns the absolute value of the relative error
+    """
+    return(abs(np.round(100*(observed-expected)/expected,2)))
+
+
+def round_decimals_up(number:float, decimals:int = 2):
+    """
+    Returns a value rounded UP to a specific number of decimal places.
+    Used to round estimated runtime ABOVE the minimum required by the CQM sampler
+    Derived from kodify.net
+    """
+    if decimals == 0:
+        return np.ceil(number)
+    factor = 10 ** decimals
+    return np.ceil(number * factor) / factor
+
+
+
 # Command line functionality
 DEFAULT_PATH = join(dirname(__file__), 'QAPLIB_problems', 'tai12a.dat')
 
-
-@click.command(help='Solve a QAP using '
+@click.command(help = 'Solve a QAP using '
                     'LeapHybridCQMSampler.')
 @click.option('--filename', type=click.Path(), default = 'tai12a',
-              help=f'Path to problem file.  Default is tai12a')
+              help = 'Path to problem file.  Default is tai12a')
 @click.option('--verbose/--not_verbose', default = True,
-              help='Prints information during and after the solve. Use not_verbose to turn it off')
+              help = 'Prints information during and after the solve. Use not_verbose to turn it off')
 @click.option('--pre_solve', default = True,
-              help='Set pre_solve to False to turn it off')
+              help = 'Set pre_solve to False to turn it off')
+@click.option('--runtime', type = float,
+              help = 'Set the runtime manually')
 
-def main(filename:str, verbose = True, pre_solve = True):
+def main(filename:str, verbose = True, pre_solve = True, runtime = 5):
     """
-    Solves the Quadratic Assignment Problem with the designation filename, then prints results and compares to QAPLIB
+    Solves the Quadratic Assignment Problem with the designated filename, then prints results and compares to QAPLIB
     Inputs:
-        filename (str): the name of the QAP to read and solve, e.g. tai12a
+        filename (str): the name of the QAP to read and solve, e.g. tai12a or wil100
         verbose (Boolean = True): set to False to turn off printed status updates mid-solve
         pre_solve (Boolean = True): set to False to turn D-Wave's presolve methods off
+        runtime (float = 5): the runtime for the CQM sampler
+            If runtime is too low then the code automatically adjusts runtime to the minimum required
     Outputs:
         (solution_value,best_value,best.sample) (tuple):
             solution_value (int): the best-known solution according to QAPLIB
             best_value (int): the best solution value from the hybrid sampler
             best.sample (dict): the best solution variables from our hybrid sampler 
                 keys are variable names
-                values are 0.0 or 1.0
+                    If pre_solve == True then variable names will be integers from 0 to n**2
+                    If pre_solve == False then variable names will be like 'xi_j' where 0 <= i,j < n
+                values are only 0.0 or 1.0
     """
     if verbose:
         print(f'\nBeginning to read files for {filename}\n')
     A,B = read_problem_dat(f'QAPLIB_problems/{filename}.dat') # distance and flow matrices
-    size = len(A)
+    n = len(A)
     solution_value = read_solution(f'QAPLIB_solutions/{filename}.sln')
     
     if verbose:
@@ -196,15 +224,23 @@ def main(filename:str, verbose = True, pre_solve = True):
     cqm = build_cqm(A,B,pre_solve=pre_solve)
     sampler=LeapHybridCQMSampler()
     min_time = sampler.min_time_limit(cqm) # Estimates the minimum recommended time for the CQM sampler
-    if min_time >= 5:
+    if not runtime:
+        if min_time >= 5:
+            new_time_spent = round_decimals_up(min_time,1)
+            if verbose:
+                print(f'Adjusting runtime to minimum required: {new_time_spent}s\n')
+        else:
+            new_time_spent = 5
+    elif runtime >= min_time: # If manual runtime is more than minimum runtime
+        new_time_spent = runtime
+        if verbose:
+            print(f'Runtime is manually set to {new_time_spent}s\n')
+    else: # If manual runtime is less than minimum runtime
         new_time_spent = round_decimals_up(min_time,1)
         if verbose:
-            print(f'Adjusting runtime to minimum required: {new_time_spent}s\n')
-    else:
-        new_time_spent = 5
-
+            print(f'Manual runtime too low\nSetting new runtime to minimum required: {new_time_spent}s\n')
     if verbose:
-        print('Beginning to sample\n')
+        print('Beginning to sample')
     sample_set = sampler.sample_cqm(cqm, time_limit = new_time_spent)
 
     if verbose:
@@ -216,7 +252,7 @@ def main(filename:str, verbose = True, pre_solve = True):
         if best_value == int(best_value):
             best_value = int(best_value)
         if verbose:
-            print(f'Feasible solution found!\n\nThe energy calculated is {best_value}\n')
+            print(f'Feasible solution found!\nThe energy calculated is {best_value}')
         if (best_value == solution_value) and verbose:
             print('This is the same value as the best-known solution according to QAPLIB.\n')
         elif (best_value > solution_value) and verbose:
@@ -226,23 +262,7 @@ def main(filename:str, verbose = True, pre_solve = True):
         return((solution_value,best_value,best.sample))
     else:
         print(f'No feasible solution found after {new_time_spent}s')
-    
-
-def relative_error_percent(observed:(int or float), expected:(int or float)):
-    """ Calculates relative error of observed to expected data to 2 decimal places """
-    return(abs(np.round(100*(observed-expected)/expected,2)))
-
-
-def round_decimals_up(number:float, decimals:int = 2):
-    """
-    Returns a value rounded UP to a specific number of decimal places.
-    Derived from kodify.net
-    """
-    if decimals == 0:
-        return np.ceil(number)
-    factor = 10 ** decimals
-    return np.ceil(number * factor) / factor
-
+        print(f'Try manually increasing the runtime for the LeapHybridCQMSampler with the \"--runtime\" option\n')
 
 if __name__ == "__main__":
     main()

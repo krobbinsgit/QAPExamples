@@ -40,16 +40,18 @@ To run the code, type the following into the command terminal:
 python qap_cqm.py 
 ```
 
-The default command uses the `tai12a` problem. To run a different problem, e.g. `sko72`, you can use the option `--filename sko72`. These problems' labels are all found in the `QAP_problems` folder. The integer in each label represents the dimensionality of matrices $A,B$ and thus is the square-root of the number of binary variables in the problem.
+* The default command uses the `tai12a` problem. To run a different problem, e.g. `sko72`, you can use the option `--filename sko72`. These problems' labels are all found in the `QAP_problems` folder. The integer in each label represents the dimensionality of matrices $A,B$ and thus is the square-root of the number of binary variables in the problem.
 
-Using the option `--not_verbose` will prevent the code from printing status updates and the final results in the command terminal.
+* Using the option `--not_verbose` will prevent the code from printing status updates and the final results in the command terminal.
 
-Using the option `--pre_solve False` will turn off D-Wave's Presolve methods which make the problem more amenable to the CQM hybrid sampler.
+* Using the option `--pre_solve False` will turn off D-Wave's Presolve methods which make the problem more amenable to the CQM hybrid sampler.
 
-As an example, if you want to run problem `tho30` without applying D-Wave's Presolve methods or printing statements, you would enter the following into the command line:
+* Using the option `--runtime` will allow you to manually set the problem runtime on the CQM sampler. If you choose a value that is too low the code will automatically adjust to the estimated minimum runtime.
+
+As an example, if you want to run problem `tho30` for 20s *without* applying D-Wave's presolve methods or printing statements, you would enter the following into the command line:
 
 ```bash
-python qap_cqm.py --filename tho30 --not_verbose --pre_solve False
+python qap_cqm.py --filename tho30 --not_verbose --pre_solve False --runtime 20
 ```
 
 ## Code Overview
