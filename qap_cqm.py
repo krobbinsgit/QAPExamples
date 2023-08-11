@@ -45,12 +45,12 @@ def read_problem_dat(path:str):
         lines = (line.strip() for line in f)
         lines = list(line for line in lines if line)
 
-    n = int(lines[0])
+    with open(path) as solution_file:
+        n = int(solution_file.readline())
     A = read_matrix(lines[1:1+n])
     B = read_matrix(lines[1+n:])
     assert len(A) == len(B) == n
     assert np.size(A,1) == np.size(B,1) == n
-
     return A, B
 
 
@@ -142,7 +142,6 @@ def build_cqm(A, B, swap='auto',pre_solve:bool = True):
     cqm = ConstrainedQuadraticModel() # Builds an empty CQM object
     set_qap_objective(cqm, A, B) # A, B were reversed for some reason. Shouldn't matter
 
-    n = len(A)
     x = [[f'x{i}_{j}' for j in range(n)] for i in range(n)]
 
     for i, row in enumerate(x):
