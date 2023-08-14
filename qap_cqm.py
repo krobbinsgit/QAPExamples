@@ -182,12 +182,11 @@ def round_decimals_up(number:float, decimals:int = 2):
 # Command line functionality
 DEFAULT_PATH = join(dirname(__file__), 'QAPLIB_problems', 'tai12a.dat')
 
-@click.command(help = 'Solve a QAP using '
-                    'LeapHybridCQMSampler.')
+@click.command(help = 'Solve a QAP using LeapHybridCQMSampler. Some examples include tho30, tai40a, els19, nug30 and more')
 @click.option('--filename', type=click.Path(), default = 'tai12a',
               help = 'Path to problem file.  Default is tai12a')
-@click.option('--verbose/--not_verbose', default = True,
-              help = 'Prints information during and after the solve. Use not_verbose to turn it off')
+@click.option('--verbose', default = True,
+              help = 'Prints information during and after the solve. Set it to False to turn it off')
 @click.option('--pre_solve', default = True,
               help = 'Set pre_solve to False to turn it off')
 @click.option('--runtime', type = float,
@@ -243,20 +242,19 @@ def main(filename:str, verbose = True, pre_solve = True, runtime = 5):
     sample_set = sampler.sample_cqm(cqm, time_limit = new_time_spent)
 
     if verbose:
-        print('Finished sampling. Beginning to filter for feasibility\n')
+        print('Finished sampling. Beginning to filter for feasibility')
     feasible_samples = sample_set.filter(lambda d: d.is_feasible)
     if len(feasible_samples)>0:
         best = feasible_samples.lowest().first
         best_value = best.energy
         if best_value == int(best_value):
             best_value = int(best_value)
-        if verbose:
-            print(f'Feasible solution found!\nThe energy calculated is {best_value}')
-        if (best_value == solution_value) and verbose:
+        print(f'\nFeasible solution found!\nThe energy calculated is {best_value}')
+        if (best_value == solution_value):
             print('This is the same value as the best-known solution according to QAPLIB.\n')
-        elif (best_value > solution_value) and verbose:
+        elif (best_value > solution_value):
             print(f'This is a {relative_error_percent(best_value,solution_value)}% worse value than the best-known solution on QAPLIB: {solution_value}\n')
-        elif (best_value < solution_value) and verbose:
+        elif (best_value < solution_value):
             print(f'This is a {relative_error_percent(best_value,solution_value)}% better value than the best-known solution on QAPLIB: {solution_value}\n')
         return((solution_value,best_value,best.sample))
     else:
