@@ -5,7 +5,7 @@ Quadratic Assignment Problems, or QAPs, make up a well-known class of NP-hard co
 [QAPLIB](https://coral.ise.lehigh.edu/data-sets/qaplib/qaplib-problem-instances-and-solutions/) is a public library containing well-studied QAPs for benchmarking purposes. Some of the problems on QAPLIB have been solved to optimality but due to the difficulty of QAPs in general, many of the best known solutions on QAPLIB are upper bounds [4]. This example uses D-Wave's hybrid Constrained Quadratic Model (CQM) sampler to find solutions for these difficult problems. 
 
 ## Quadratic Assignment Problem Statement
-Consider a manufacturing center which needs to have $n$ stations inside of it. Each station must be placed in one of $n$ locations. Further, each station has some material flow between itself and other station. Each location must hold one station and vice-versa. How do we place the stations to minimize the overall flow and distance between stations? The goal is to make the system more efficient [1,2].
+Consider a manufacturing center which needs to have $n$ stations inside of it. Each station must be placed in one of $n$ locations. Further, each station has some material flow between itself and other station. Each location must hold one station and vice-versa. How do we place the stations to minimize the overall flow and distance between stations? The goal is to make the system more efficient [1,2]. The stations can also be thought of as factories which need to be built in various locations.
 
 ![QAP Picture](images/QAP_pic.png)
 
@@ -50,10 +50,12 @@ python qap_cqm.py
 
 * Using the option `--runtime` will allow you to manually set the problem runtime on the CQM sampler. If you choose a value that is too low the code will automatically adjust to the estimated minimum runtime. The miminum value is 5s.
 
-As an example: if you wanted to run problem `tho30` for 20s without applying D-Wave's presolve methods or printing statements, you would enter the following into the command line:
+* Using the option `--plot False` will stop the `main()` function from plotting the results
+
+As an example: if you wanted to run problem `tho30` for 20s without applying D-Wave's presolve methods, printing statements or plotting the results you would enter the following into the command line:
 
 ```bash
-python qap_cqm.py --filename tho30 --verbose False --pre_solve False --runtime 20
+python qap_cqm.py --filename tho30 --verbose False --pre_solve False --runtime 20 --plot False
 ```
 
 ## Code Overview
@@ -70,8 +72,15 @@ This code constructs a CQM object out of a previously-established QAP benchmark 
 * `main()` calls `build_cqm()` and uses D-Wave's hybrid Constrained Quadratic Model sampler to solve the QAP. It then finds the relative error between the sampled objective value and the best known value from QAPLIB. This function also controls all the command line option functionality.
 
 ### Side Functions
+* `solution_plotter()` plots the solution obtained by the hybrid solver as a grid showing which stations are in which locations
 * `relative_error_percent()` returns the relative error between observed and expected values as a percent with 2 decimal places of precision
 * `round_decimals_up()` rounds floats up to a certain decimal place
+
+### Output Plot
+![D-Wave Logo](images/example_solution_plot.png)
+
+If the `plot` option is not set to `False`, then the code will construct a plot of the solution. Each point on the plot represents a station placed at a location. For example: the plot above has a point at (1,2) indicating that station 2 is placed at location 1.
+
 
 ## Code Specifics
 
@@ -86,7 +95,7 @@ This code constructs a CQM object out of a previously-established QAP benchmark 
 ## Preliminary Results
 These are some early results from running a selection of QAPs through D-Wave's Leap™ cloud service and Advantage™ quantum annealer. For all cases we set `pre_solve = True` to apply D-Wave's problem treatment tools before solving. Relative Error corresponds to the difference between the solution found by `LeapHybridCQMSampler` and the best known value on QAPLIB.
 
-| Problem | # Coefficients | Formulation Time (s) | Solve Time (s) | Feasibility Time (s) | Total Time (s) | Solved Energy | Best Known Energy | Relative Error |
+| Problem | # Coefficients | Formulation Time (s) | Solve Time (s) | Feasibility Time (s) | Total Time (s) | Solved Cost | Best Known Cost | Relative Error |
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 |tai12a | $8.9\times 10^3$ | 0.0 | 5.0 | 6.9 | 11.9 | 224416 | 224416 | 0% |
 |tai12b | $7.5\times 10^3$ | 0.0 | 5.0 | 6.8 | 11.8 | 39464925 | 39464925 | 0% |

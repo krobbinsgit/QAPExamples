@@ -21,6 +21,7 @@ import cytoolz as tl
 import click
 import itertools as it
 from os.path import dirname, join
+import matplotlib.pyplot as plt
 
 
 
@@ -56,8 +57,13 @@ def read_problem_dat(path:str):
 
 def read_solution(filename:str):
     with open(filename) as solution_file:
-        solution_value = int(solution_file.readline().split(' ')[-1][:-1])
-    return(solution_value)
+        lines = solution_file.readlines()
+        num_lines = len(lines)
+        best_value_QAPLIB = int(lines[0].split(' ')[-1][:-1])
+        solution_permutation = []
+        for j in range(1,num_lines):
+            solution_permutation += [int(i)-1 for i in lines[j].split()]
+    return((solution_permutation,best_value_QAPLIB))
 
 
 def set_qap_objective(cqm, A, B):
@@ -157,6 +163,36 @@ def build_cqm(A, B, swap='auto',pre_solve:bool = True):
         reduced_cqm = cqm
     return reduced_cqm
 
+def solution_plotter(filename:str,solution:dict,A,B):
+    """
+    Plots the solution obtained by the hybrid solver
+    Inputs:
+        filename (str): the name of the problem that was solved, e.g. tai5a
+        solution (dict): a dictionary showing the binary variable values in the hybrid solver's solution
+        A (numpy.array): the flow or distance matrix for the QAP
+        B (numpy.array): the distance or flow matrix for the QAP
+    Outputs:
+        None
+    """
+    n = len(A)
+    vals = list(solution.values())
+    x_positions = [int(j/n) for j in range(len(vals)) if vals[j] == 1.0]
+    y_positions = [j%n for j in range(len(vals)) if vals[j] == 1.0]
+    plt.grid(True)
+    plt.xlabel('Locations')
+    plt.ylabel('Stations')
+    plt.title(f'Station Placement for {filename}')
+    if n <= 15:
+        grid_spacing = 1
+    else:
+        grid_spacing = np.ceil(n/10)
+    plt.xticks(np.arange(0, n+1, grid_spacing))
+    plt.yticks(np.arange(0, n+1, grid_spacing))
+    plt.xlim(-1,n+1)
+    plt.ylim(-1,n+1)
+    plt.scatter(x_positions,y_positions, label = 'Hybrid sampler solution')
+    plt.savefig(f'{filename}_solution_plot.png')
+
     
 def relative_error_percent(observed:(int or float), expected:(int or float)):
     """
@@ -190,73 +226,96 @@ DEFAULT_PATH = join(dirname(__file__), 'QAPLIB_problems', 'tai12a.dat')
 @click.option('--pre_solve', default = True,
               help = 'Set pre_solve to False to turn it off')
 @click.option('--runtime', type = float,
-              help = 'Set the runtime manually')
+              help = 'Set the sampler\'s maximum runtime manually')
+@click.option('--plot', default = True,
+              help = 'Set to False to stop plotting the solution as a graph')
 
-def main(filename:str, verbose = True, pre_solve = True, runtime = 5):
+def main(filename:str, verbose = True, pre_solve = True, runtime = 5, plot = True):
     """
-    Solves the Quadratic Assignment Problem with the designated filename, then prints results and compares to QAPLIB
+    Solves the Quadratic Assignment Problem with the designated filename, then prints/plots results and compares to QAPLIB
     Inputs:
         filename (str): the name of the QAP to read and solve, e.g. tai12a or wil100
         verbose (Boolean = True): set to False to turn off printed status updates mid-solve
         pre_solve (Boolean = True): set to False to turn D-Wave's presolve methods off
         runtime (float = 5): the runtime for the CQM sampler
             If runtime is too low then the code automatically adjusts runtime to the minimum required
+        plot (Boolean = True): set to False to prevent plotting the solution with pyplot
     Outputs:
-        (solution_value,best_value,best.sample) (tuple):
-            solution_value (int): the best-known solution according to QAPLIB
-            best_value (int): the best solution value from the hybrid sampler
-            best.sample (dict): the best solution variables from our hybrid sampler 
+        (best_value_QAPLIB,  best_solution_QAPLIB_perm, best_value_hybrid, best_solution_hybrid) (tuple):
+            best_value_QAPLIB (int): the best-known solution according to QAPLIB
+            best_solution_QAPLIB_perm (list of ints): the problem solution read from the .sln file
+            best_value_hybrid (int): the best solution value from the hybrid sampler
+            best_solution_hybrid (dict): the best solution variables from our hybrid sampler 
                 keys are variable names
                     If pre_solve == True then variable names will be integers from 0 to n**2
                     If pre_solve == False then variable names will be like 'xi_j' where 0 <= i,j < n
                 values are only 0.0 or 1.0
     """
+    # Read the problem and solution
     if verbose:
-        print(f'\nBeginning to read files for {filename}\n')
+        print(f'\nBeginning to read files for {filename}')
     A,B = read_problem_dat(f'QAPLIB_problems/{filename}.dat') # distance and flow matrices
     n = len(A)
-    solution_value = read_solution(f'QAPLIB_solutions/{filename}.sln')
-    
+    best_solution_QAPLIB_perm, best_value_QAPLIB = read_solution(f'QAPLIB_solutions/{filename}.sln') # The best-known solutions
     if verbose:
-        print('Making the CQM object\n')
+        print(f'This problem will need to place {n} stations into {n} locations\n')
+        print('Now making the CQM object\n')
+
+    # Build CQM object
     cqm = build_cqm(A,B,pre_solve=pre_solve)
-    sampler=LeapHybridCQMSampler()
+
+    # Specify sampler
+    sampler = LeapHybridCQMSampler()
+
+    # Pick runtime for sampler
     min_time = sampler.min_time_limit(cqm) # Estimates the minimum recommended time for the CQM sampler
     if not runtime:
         if min_time >= 5:
             new_time_spent = round_decimals_up(min_time,1)
             if verbose:
-                print(f'Adjusting runtime to minimum required: {new_time_spent}s\n')
+                print(f'Adjusting sampler\'s maximum runtime to minimum required: {new_time_spent}s\n')
         else:
             new_time_spent = 5
     elif runtime >= min_time: # If manual runtime is more than minimum runtime
         new_time_spent = runtime
         if verbose:
-            print(f'Runtime is manually set to {new_time_spent}s\n')
+            print(f'Sampler\'s maximum runtime manually set to {new_time_spent}s\n')
     else: # If manual runtime is less than minimum runtime
         new_time_spent = round_decimals_up(min_time,1)
         if verbose:
-            print(f'Manual runtime too low\nSetting new runtime to minimum required: {new_time_spent}s\n')
+            print(f'Manual runtime too low\nSetting new maximum runtime to minimum required: {new_time_spent}s\n')
+
+    # Run the sampler
     if verbose:
         print('Beginning to sample')
     sample_set = sampler.sample_cqm(cqm, time_limit = new_time_spent)
 
+    # Filter the solutions
     if verbose:
         print('Finished sampling. Beginning to filter for feasibility')
     feasible_samples = sample_set.filter(lambda d: d.is_feasible)
+    
+    # Analyze the solution and print results
     if len(feasible_samples)>0:
         best = feasible_samples.lowest().first
-        best_value = best.energy
-        if best_value == int(best_value):
-            best_value = int(best_value)
-        print(f'\nFeasible solution found!\nThe energy calculated is {best_value}')
-        if (best_value == solution_value):
+        best_value_hybrid = best.energy
+        best_solution_hybrid = best.sample
+        if best_value_hybrid == int(best_value_hybrid):
+            best_value_hybrid = int(best_value_hybrid)
+        print(f'\nFeasible solution found!\nThe total cost of the solution is {best_value_hybrid}')
+        if (best_value_hybrid == best_value_QAPLIB):
             print('This is the same value as the best-known solution according to QAPLIB.\n')
-        elif (best_value > solution_value):
-            print(f'This is a {relative_error_percent(best_value,solution_value)}% worse value than the best-known solution on QAPLIB: {solution_value}\n')
-        elif (best_value < solution_value):
-            print(f'This is a {relative_error_percent(best_value,solution_value)}% better value than the best-known solution on QAPLIB: {solution_value}\n')
-        return((solution_value,best_value,best.sample))
+        elif (best_value_hybrid > best_value_QAPLIB):
+            print(f'This is a {relative_error_percent(best_value_hybrid,best_value_QAPLIB)}% higher solution from the best-known solution on QAPLIB: {best_value_QAPLIB}\n')
+        elif (best_value_hybrid < best_value_QAPLIB):
+            print(f'This is a {relative_error_percent(best_value_hybrid,best_value_QAPLIB)}% better value than the best-known solution on QAPLIB: {best_value_QAPLIB}\n')
+        
+        # Plot the solution if plot == True
+        if plot == True:
+            solution_plotter(filename,best_solution_hybrid,A,B)
+
+        return((best_value_QAPLIB,  best_solution_QAPLIB_perm, best_value_hybrid, best_solution_hybrid))
+
     else:
         print(f'No feasible solution found after {new_time_spent}s')
         print(f'Try manually increasing the runtime for the LeapHybridCQMSampler with the \"--runtime\" option\n')
