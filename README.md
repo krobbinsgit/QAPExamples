@@ -77,10 +77,13 @@ This code constructs a CQM object out of a previously-established QAP benchmark 
 * `round_decimals_up()` rounds floats up to a certain decimal place
 
 ### Output Plot
-![D-Wave Logo](images/example_solution_plot.png)
+![Location/Station Plot](images/example_solution_plot.png)
 
 If the `plot` option is not set to `False`, then the code will construct a plot of the solution. Each point on the plot represents a station placed at a location. For example: the plot above has a point at (1,2) indicating that station 2 is placed at location 1.
 
+![Error Bar Plot](images/barplot.png)
+
+Alternatively, we can view solution as a barplot of cost for each location in the solution. To compare to the best-known solution from QAPLIB we'll plot the cost difference between the CQM and best known solutions for each location. 
 
 ## Code Specifics
 

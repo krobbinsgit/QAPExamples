@@ -163,14 +163,15 @@ def build_cqm(A, B, swap='auto',pre_solve:bool = True):
         reduced_cqm = cqm
     return reduced_cqm
 
-def solution_plotter(filename:str,solution:dict,A,B):
+def solution_plotter(filename:str,A,B,solution:dict):
     """
-    Plots the solution obtained by the hybrid solver
+    Plots the solution obtained by the hybrid solver as a scatter plot of station vs location
+    Saves the plot as filename_solution_plot.png
     Inputs:
         filename (str): the name of the problem that was solved, e.g. tai5a
-        solution (dict): a dictionary showing the binary variable values in the hybrid solver's solution
         A (numpy.array): the flow or distance matrix for the QAP
         B (numpy.array): the distance or flow matrix for the QAP
+        solution (dict): a dictionary showing the binary variable values in the hybrid solver's solution
     Outputs:
         None
     """
@@ -192,6 +193,41 @@ def solution_plotter(filename:str,solution:dict,A,B):
     plt.ylim(-1,n+1)
     plt.scatter(x_positions,y_positions, label = 'Hybrid sampler solution')
     plt.savefig(f'{filename}_solution_plot.png')
+
+
+def bar_plotter(filename:str,A,B,best_solution:list,hybrid_solution:dict):
+    """
+    Plots a bar graph of the difference between the best known and hybrid solver's solutions.
+    Saves the graph as filename_solution_graph.png
+    Inputs:
+        filename (str): the name of the problem that was solved, e.g. tai5a
+        A (numpy.array): the flow or distance matrix for the QAP
+        B (numpy.array): the distance or flow matrix for the QAP
+        best_solution (list): the best known solution to the QAP as read in the .sln file
+        hybrid_solution (dict): a dictionary showing the binary variable values in the hybrid solver's solution
+    Outputs:
+        None
+    """
+    n = len(A)
+    def nvec(n,ind):
+        out = np.zeros(n)
+        out[ind] = 1
+        return(out)
+    def nmat(vec): # Should this be transposed? writes best solution perm matrix from solution_perm
+        n = len(vec)
+        return(np.array([nvec(n,k) for k in vec]))
+    def cost_list(A,B,solmat):
+        return(np.array(list(sum(A[j,k]*B[l,m]*solmat[j,l]*solmat[k,m] for k in range(n) for l in range(n) for m in range(n)) for j in range(n))))
+    best_matrix = nmat(best_solution)
+    hybrid_matrix = np.array(list(hybrid_solution.values())).reshape(n,n)
+    best_cost_list = cost_list(A,B, best_matrix)
+    hybrid_cost_list = cost_list(A,B,hybrid_matrix)
+    plt.bar(range(n),(hybrid_cost_list-best_cost_list), label = 'Error of locations\' cost')
+    plt.plot([0,n],[0,0])
+    plt.xlabel('Location')
+    plt.ylabel('Cost Error')
+    plt.title(f'Error of Costs for {filename}')
+    plt.savefig(f'{filename}_solution_graph.png')
 
     
 def relative_error_percent(observed:(int or float), expected:(int or float)):
@@ -312,7 +348,8 @@ def main(filename:str, verbose = True, pre_solve = True, runtime = 5, plot = Tru
         
         # Plot the solution if plot == True
         if plot == True:
-            solution_plotter(filename,best_solution_hybrid,A,B)
+            solution_plotter(filename,A,B,best_solution_hybrid)
+            bar_plotter(filename,A,B,best_solution_QAPLIB_perm,best_solution_hybrid)
 
         return((best_value_QAPLIB,  best_solution_QAPLIB_perm, best_value_hybrid, best_solution_hybrid))
 
