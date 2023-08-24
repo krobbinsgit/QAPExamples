@@ -83,12 +83,12 @@ If the `plot` option is not set to `False`, then the code will construct a plot 
 
 ![Error Bar Plot](images/barplot.png)
 
-Alternatively, we can view solution as a barplot of cost for each location in the solution. To compare to the best-known solution from QAPLIB we'll plot the cost difference between the CQM and best known solutions for each location. 
+Alternatively, we can view solution as a histogram of cost (flow times distance) for each location in the solution. To compare to the best-known solution from QAPLIB we'll plot the cost difference between the CQM and best known solutions for each location. If the bar is negative then it corresponds to a location being less costly and if the bar is positive then the opposite is true.
 
 ## Code Specifics
 
 * In addition to solve time, runtime for this code includes reading the problem data, constructing the problem object and filtering for feasible solutions
-    * Writing the CQM object's constraints and filtering for feasible solutions take the most time as problem size increases
+    * Filtering for feasible solutions take the most time as problem size increases
     * The simplest problems take on the order of seconds while `tai256c` took almost 2.5 hours
     * The `--runtime` option only controls the maximum possible runtime for the hybrid CQM sampler
 * D-Wave's hybrid samplers treat the quadratic nature of the problem natively instead of linearizing the problem
