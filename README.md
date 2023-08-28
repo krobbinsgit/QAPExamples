@@ -88,7 +88,7 @@ Alternatively, we can view solution as a histogram of cost (flow times distance)
 ## Code Specifics
 
 * In addition to solve time, runtime for this code includes reading the problem data, constructing the problem object and filtering for feasible solutions
-    * Filtering for feasible solutions take the most time as problem size increases
+    * CQM runtime is the most time-intensive part of the code as $n$ increases
     * The simplest problems take on the order of seconds while `tai256c` took almost 2.5 hours
     * The `--runtime` option only controls the maximum possible runtime for the hybrid CQM sampler
 * D-Wave's hybrid samplers treat the quadratic nature of the problem natively instead of linearizing the problem
@@ -98,17 +98,23 @@ Alternatively, we can view solution as a histogram of cost (flow times distance)
 ## Preliminary Results
 These are some early results from running a selection of QAPs through D-Wave's Leap™ cloud service and Advantage™ quantum annealer. For all cases we set `pre_solve = True` to apply D-Wave's problem treatment tools before solving. Relative Error corresponds to the difference between the solution found by `LeapHybridCQMSampler` and the best known value on QAPLIB.
 
-| Problem | # Coefficients | Formulation Time (s) | Solve Time (s) | Feasibility Time (s) | Total Time (s) | Solved Cost | Best Known Cost | Relative Error |
-|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-|tai12a | $8.9\times 10^3$ | 0.0 | 5.0 | 6.9 | 11.9 | 224416 | 224416 | 0% |
-|tai12b | $7.5\times 10^3$ | 0.0 | 5.0 | 6.8 | 11.8 | 39464925 | 39464925 | 0% |
-|tai20a | $7.1\times 10^4$ | 0.3 | 5.0 | 6.4 | 11.7 | 708018 | 703482 | 0.64% |
-|rou20 | $7.2\times 10^4$ | 1.0 | 5.0 | 8.2 | 14.2 | 725522 | 725522 | 0% |
-|tai150b | $1.7\times 10^8$ | 918.6 | 814.7 | 3733.9 | 5467.2 | 499623949 | 498896643 | 0.14% |
-|tho150 | $1.1\times 10^8$ | 857.7 | 496.5 | 988.6 | 2342.8 | 8197622 | 8133398 | 0.79% |
-|tai256c | $2.8\times 10^8$ | 709.2 | 1299.0 | 6470.1 | 8478.3 | 44932538 | 44759294 | 0.39% |
 
-The [QAPLIB website](https://coral.ise.lehigh.edu/data-sets/qaplib/qaplib-problem-instances-and-solutions/) does not list runtimes to obtain the best known solutions so they were not available to compare with [4].
+| Problem | # Coefficients | Formulation Time (s) | Solve + Feasibility Time (s) | Total Time (s) | Solved Cost | Best Known Cost | Relative Error |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+|tai12a | $8.9\times 10^3$ | 0.0 | 11.9 | 11.9 | 224416 | 224416 | 0% |
+|tai12b | $7.5\times 10^3$ | 0.0 | 11.8 | 11.8 | 39464925 | 39464925 | 0% |
+|tai20a | $7.1\times 10^4$ | 0.3 | 11.4 | 11.7 | 708018 | 703482 | 0.64% |
+|rou20 | $7.2\times 10^4$ | 1.0 | 13.2 | 14.2 | 725522 | 725522 | 0% |
+|tai50b | $2.1\times 10^6$ | 6.5 | 24.9 | 31.4 | 460032387 | 458821517 | 1.003 |
+|tai80a | $2.0\times 10^7$ | 86.1 | 350.1 | 436.2 | 13682464 | 13499184 | 1.014 |
+|tai100a | $4.8\times 10^7$ | 207.5 | 583.6 | 791.1 | 21332192 | 21052466 | 1.013 |
+|tai150b | $1.7\times 10^8$ | 918.6 | 4548.6 | 5467.2 | 499623949 | 498896643 | 0.14% |
+|tho150 | $1.1\times 10^8$ | 857.7 | 1485.1 | 2342.8 | 8197622 | 8133398 | 0.79% |
+|tai256c | $2.8\times 10^8$ | 709.2 | 7769.1 | 8478.3 | 44932538 | 44759294 | 0.39% |
+
+In the above table, the solver runtime is combined with the time required to filter for feasible solutions, where in general the filtering time is negligible compared to solve time.
+
+The [QAPLIB website](https://coral.ise.lehigh.edu/data-sets/qaplib/qaplib-problem-instances-and-solutions/) does not list runtimes to obtain the best known solutions so they were not available to compare with [4]. 
 
 ## References
 1. S. Sahni & T. Gonzalez, "P-Complete Approximation Problems," 1976, [University of Minnesota](https://dl.acm.org/doi/pdf/10.1145/321958.321975)
