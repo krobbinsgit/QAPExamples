@@ -1,6 +1,6 @@
 ![D-Wave Logo](images/dwave_logo.png)
 # Quadratic Assignment Problems
-Quadratic Assignment Problems, or QAPs, make up a well-known class of NP-hard combinatorial optimization problems which have been described as the "hardest of the hard" [1,2]. They have been applied to factory and hosptial layouts as well as electronic chip design, scheduling, quantum physics and more [1-3]. 
+Quadratic Assignment Problems, or QAPs, make up a well-known class of NP-hard combinatorial optimization problems which have been described as the "hardest of the hard" [1,2]. They have been applied to factory and hospital layouts as well as electronic chip design, scheduling, quantum physics and more [1-3]. 
 
 [QAPLIB](https://coral.ise.lehigh.edu/data-sets/qaplib/qaplib-problem-instances-and-solutions/) is a public library containing well-studied QAPs for benchmarking purposes. Some of the problems on QAPLIB have been solved to optimality but due to the difficulty of QAPs in general, many of the best known solutions on QAPLIB are upper bounds [4]. This example uses D-Wave's hybrid Constrained Quadratic Model (CQM) sampler to find solutions for these difficult problems. 
 
